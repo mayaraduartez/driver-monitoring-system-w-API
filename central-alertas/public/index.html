@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Central de Alertas</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      margin: 0;
+      padding: 32px;
+      color: #0f172a;
+    }
+
+    h1 {
+      color: #ffffff;
+      margin-bottom: 6px;
+      font-size: 30px;
+    }
+
+    .subtitle {
+      color: #cbd5e1;
+      margin-bottom: 28px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.96);
+      padding: 22px;
+      border-radius: 18px;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 13px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .card p {
+      margin: 10px 0 0;
+      font-size: 34px;
+      font-weight: 800;
+    }
+
+    .table-container {
+      background: #ffffff;
+      border-radius: 18px;
+      overflow: auto;
+      box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    th {
+      background: #020617;
+      color: #e2e8f0;
+      padding: 14px;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    td {
+      padding: 14px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+
+    tr:hover {
+      background: #f8fafc;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .badge.NORMAL {
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    .badge.ATENCAO {
+      color: #854d0e;
+      background: #fef3c7;
+    }
+
+    .badge.ALERTA_SONOLENCIA {
+      color: #9a3412;
+      background: #ffedd5;
+    }
+
+    .badge.ALERTA_DISTRACAO {
+      color: #92400e;
+      background: #fde68a;
+    }
+
+    .badge.CRITICO {
+      color: #991b1b;
+      background: #fee2e2;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 18px;
+      }
+
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Central de Monitoramento de Alertas</h1>
+  <p class="subtitle">Acompanhamento remoto dos eventos gerados pelo protótipo em tempo real.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h2>Total de Alertas</h2>
+      <p id="total">0</p>
+    </div>
+
+    <div class="card">
+      <h2>Sonolência</h2>
+      <p id="sonolencia">0</p>
+    </div>
+
+    <div class="card">
+      <h2>Distração</h2>
+      <p id="distracao">0</p>
+    </div>
+
+    <div class="card">
+      <h2>Críticos</h2>
+      <p id="critico">0</p>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Data/Hora</th>
+          <th>Veículo</th>
+          <th>Motorista</th>
+          <th>Nível</th>
+          <th>Sonolência</th>
+          <th>Distração</th>
+          <th>Mensagem</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-alertas"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function carregarAlertas() {
+      const response = await fetch("/api/alertas");
+      const alertas = await response.json();
+
+      document.getElementById("total").innerText = alertas.length;
+
+      document.getElementById("sonolencia").innerText =
+        alertas.filter(a => a.level === "ALERTA_SONOLENCIA").length;
+
+      document.getElementById("distracao").innerText =
+        alertas.filter(a => a.level === "ALERTA_DISTRACAO").length;
+
+      document.getElementById("critico").innerText =
+        alertas.filter(a => a.level === "CRITICO").length;
+
+      const tbody = document.getElementById("tabela-alertas");
+      tbody.innerHTML = "";
+
+      alertas.forEach(alerta => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${alerta.id}</td>
+          <td>${alerta.data_hora_alerta || alerta.created_at}</td>
+          <td>${alerta.veiculo_id || "-"}</td>
+          <td>${alerta.motorista_id || "-"}</td>
+          <td><span class="badge ${alerta.level}">${alerta.level}</span></td>
+          <td>${Number(alerta.sleepiness_score || 0).toFixed(2)}</td>
+          <td>${Number(alerta.distraction_score || 0).toFixed(2)}</td>
+          <td>${alerta.message || "-"}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    carregarAlertas();
+    setInterval(carregarAlertas, 5000);
+  </script>
+</body>
+</html>
